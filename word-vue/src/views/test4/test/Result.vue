@@ -1,0 +1,251 @@
+<template>
+    <div class="container">
+        <div class="header">
+            <div>
+                <el-progress :text-inside="true" :stroke-width="24" :percentage="(current_group/15*100).toFixed(0)*1" status="success"></el-progress>
+            </div>
+        </div>
+        <div class="content">
+            <div class="left"></div>
+            <div class="center">
+                <div class="el-row">
+                    <div class="confirm" style="color: #dc143c">{{accuracy}}</div>
+                </div>
+                <h1 class="el-row">你在本组中的测试结果如下</h1>
+                <div class="el-row">
+                    <div class="confirm">{{result_L}}</div>
+                </div>
+                <div class="el-row">
+                    <div class="confirm">{{result_S}}</div>
+                </div>
+            </div>
+            <div class="right"></div>
+        </div>
+        <div class="footer"></div>
+    </div>
+
+</template>
+
+<script>
+    import GLOBAL from './../../../plugins/global_variable'
+    export default {
+        name: "Result",
+        data() {
+            return {
+                // user不一定能用到
+                user: {
+                    id: '',
+                    email: '',
+                    invited_code: '',
+                    test_fin_time: '',
+                    register_time: '',
+                },
+                //显示字母的结果
+                result_L: '',
+                //显示句子的结果
+                result_S: '',
+                //显示总的句子的正确率
+                accuracy: '',
+                //显示在点击按钮上的文字
+                next_group: '',
+                timer:'',
+                //测试的总组数
+                test_length:'',
+                //当前的组数
+                current_group:'',
+            };
+        },
+        created() {
+            history.pushState(null, null, document.URL);
+            window.addEventListener('popstate', function () {
+                history.pushState(null, null, document.URL);
+            });
+
+            document.body.style.backgroundColor="#DCDCDC";
+        },
+        mounted() {
+            //赋值测试的组数个数
+            this.test_length=GLOBAL.test_length;
+            // //赋值测试的当前组数
+            this.current_group=GLOBAL.test_correct_L.length;
+            //显示结果
+            this.show();
+            //重新将用户判断的句子正确与否置为空,这里我会复用到正式测试。
+            GLOBAL.user_S_judge = [];
+            // 重新将用户判断的字母置为空
+            GLOBAL.user_L_judge = [];
+            //自动跳转
+            this.jump();
+        },
+        methods: {
+            show() {
+                //全局变量传来值，渲染到页面中
+                //取句子描述二维数组的第一个数组
+                // var sentence_des = GLOBAL.test_S_des.shift();
+                let half_length = GLOBAL.temp_LS_des.length / 2;
+                //GLOBAL.train_correct_L[GLOBAL.train_correct_L.length-1]取这个数组的最后一个值
+                //GLOBAL.train_L_des.shift().length移除字母描述的第一个数组，同时得到其长度
+                this.result_L ='字母记忆:' +
+                    String(GLOBAL.test_correct_L[GLOBAL.test_correct_L.length - 1]) + '/' + half_length + '个选择正确';
+
+                this.result_S = '句子判断:' +
+                    String(GLOBAL.test_correct_S[GLOBAL.test_correct_S.length - 1]) + '/' + half_length + '句选择正确';
+
+                this.accuracy ='句子判断正确率'+ (GLOBAL.user_right_S/GLOBAL.user_total_S*100).toFixed()+'%';
+                GLOBAL.test_S_accuracy = (GLOBAL.user_right_S/GLOBAL.user_total_S*100).toFixed(0)+'%';
+            },
+            jump(){
+                //如果本次训练结束了
+                if (GLOBAL.test_LS_src.length === 0) {
+                    this.save_total();
+                    //间隔一秒后再跳转
+                    this.timer = setTimeout(()=>{
+                        this.$router.push('/Endshow');
+                    },2000)
+                }
+                //如果没有，则进行下一组的训练
+                else {
+                    //存前面的数据
+                    this.save();
+                    this.timer = setTimeout(()=>{
+                        this.$router.push('/LStestjudgeS');
+                    },2000)
+                }
+            },
+            sum(arr){
+                let sum = 0;
+                for (let i = 0, len = arr.length; i < len; i++) {
+                    sum += arr[i];
+                }
+                return sum;
+            },
+            save() {
+                let content = {}
+                let date = new Date()
+                content.part_email = GLOBAL.email;
+                content.number=GLOBAL.number;
+                content.trial_index = "letter_sentence_T"+String(GLOBAL.test4_part2_Trial_index[GLOBAL.trial_index]);
+                content.trial_type = "letter_sentence_T";
+                content.exp_type = GLOBAL.test4_materialType;
+                content.user_answer = GLOBAL.temp_answer;
+                let correct_answer = [];
+                for (let i = 1; i < GLOBAL.temp_LS_des.length; i += 2) {
+                    correct_answer.push(GLOBAL.temp_LS_des[i]);
+                }
+                content.correct_answer = String(correct_answer);
+                content.letter=GLOBAL.test_correct_L[GLOBAL.test_correct_L.length - 1];
+                content.sentence_array=GLOBAL.sentence_array;
+                let correct = (this.sum(content.sentence_array)/content.sentence_array.length*100).toFixed(0)+"%";
+                content.sentence_rate_array=new Array(content.sentence_array.length).fill(correct);
+                content.total_item =content.sentence_array.length;
+                content.letter_rate = String((content.letter * 100 / content.total_item).toFixed(0)) + '%';
+                content.exp_date =  date.getFullYear() + "/" + (date.getMonth() + 1) + "/" + date.getDate();
+                content.exp_Session = GLOBAL.session;
+                content.rt = GLOBAL.react_array;
+                GLOBAL.test4_part2_dataBag.push(content);
+                console.log(content);
+                /*axios.post('word/wm/save_array', content).then(
+                    function (resp) {
+                        if (resp.data === "success") {
+                            console.log("ok")
+                        }
+                    });*/
+                GLOBAL.number=GLOBAL.number+content.rt.length;
+                GLOBAL.trial_index++;
+                //都在save里面重置
+                //重置全局变量
+                GLOBAL.react_array=[];
+                GLOBAL.sentence_array=[];
+                GLOBAL.sentence_rate_array=[];
+                GLOBAL.temp_answer = [];
+            },
+            save_total() {
+                let content = {};
+                let date = new Date();
+                let S_right=this.sum(GLOBAL.test_correct_S);
+                let Total_item=74;
+                content.part_email = GLOBAL.email;
+                content.number=GLOBAL.number;
+                content.trial_index = "letter_sentence_T"+String(GLOBAL.test4_part2_Trial_index[14]);
+                content.trial_type = "letter_sentence_T";
+                content.exp_type = GLOBAL.test4_materialType;
+                content.user_answer = GLOBAL.temp_answer;
+                let correct_answer = [];
+                for (let i = 1; i < GLOBAL.temp_LS_des.length; i += 2) {
+                    correct_answer.push(GLOBAL.temp_LS_des[i]);
+                }
+                content.correct_answer = String(correct_answer);
+                content.letter=GLOBAL.test_correct_L[GLOBAL.test_correct_L.length - 1];
+                content.sentence_array=GLOBAL.sentence_array;
+                let correct = (this.sum(content.sentence_array)/content.sentence_array.length*100).toFixed(0)+"%";
+                content.sentence_rate_array=new Array(content.sentence_array.length).fill(correct);
+                content.total_item =content.sentence_array.length;
+                content.letter_rate = String((content.letter * 100 / content.total_item).toFixed(0)) + '%';
+                content.total_sentence_rate=String((S_right * 100 / Total_item).toFixed(0)) + '%';
+                content.exp_date =  date.getFullYear() + "/" + (date.getMonth() + 1) + "/" + date.getDate();
+                content.exp_Session = GLOBAL.session;
+                content.rt = GLOBAL.react_array;
+                GLOBAL.test4_part2_dataBag.push(content);
+                console.log(content);
+                /*axios.post('word/wm/save_array', content).then(
+                    function (resp) {
+                        if (resp.data === "success") {
+                            console.log("ok")
+                        }
+                    });*/
+                GLOBAL.number=GLOBAL.number+content.rt.length;
+                GLOBAL.trial_index++;
+                //都在save里面重置
+                //重置全局变量
+                GLOBAL.react_array=[];
+                GLOBAL.sentence_array=[];
+                GLOBAL.sentence_rate_array=[];
+            },
+        },
+        beforeDestroy() {
+            clearTimeout(this.timer);
+        }
+    }
+</script>
+
+<style scoped>
+    .container{
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+    .header{
+        display: flex;
+        flex-direction: column;
+        height: 40vh;
+    }
+    .footer{
+        height: 75px;
+    }
+    .content{
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+    }
+    .el-row{
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        margin-bottom:80px
+    }
+    .left,.right{
+        width:400px;
+    }
+    .center{
+        flex: 1;
+    }
+    .row{
+        display: flex;
+        justify-content: space-around;
+        margin-bottom:80px
+    }
+    .confirm{
+        font-size:25px;
+        font-weight:500;
+    }
+</style>

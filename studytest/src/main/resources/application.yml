@@ -1,0 +1,21 @@
+spring:
+  datasource:
+#    url: jdbc:mysql://47.106.124.177:3306/language?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+#    url: jdbc:mysql://localhost:3306/language_2?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+#     url: jdbc:mysql://localhost:3306/language?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+     url: jdbc:mysql://139.186.128.135/language?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+#     username: root
+     username: tall
+#     password: Yasuoman.2020
+     password: tall-root
+     driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  mvc:
+    static-path-pattern: '/**'
+server:
+  port: 8181
+

@@ -1,0 +1,15 @@
+{
+  "name": "外国语学院测试项目",
+  "short_name": "测试项目",
+  "icons": [
+    {
+      "src": "./img/common/logo.jpg",
+      "sizes": "144x144",
+      "type": "image/jpg"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#4DBA87"
+}
